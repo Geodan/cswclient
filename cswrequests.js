@@ -1,4 +1,4 @@
-import { parseXml, evaluateXPath } from "./parsexml.js";
+import { parseXml, evaluateXPath, getDCMITerms } from "./parsexml.js";
 
 const nodeValue = (nodes, index) => nodes[index] ? nodes[index].nodeValue : undefined;
 const nodeArray = (nodes) => nodes?.length ? Array.from(nodes).map(node => node.nodeValue) : [];
@@ -88,15 +88,21 @@ export async function fetchDescribeRecord(url, cswVersion) {
 
         const briefRecordTypeName = bareTypeName(nodeArray(evaluateXPath(cswDescribeRecord, '//xs:element[@name="BriefRecord"]/@type')));
         const briefRecordType = nodeArray(evaluateXPath(cswDescribeRecord, `//xs:complexType[@name="${briefRecordTypeName}"]/xs:complexContent/xs:extension/xs:sequence/xs:element/@ref`));
-        const summaryRecordTypeName = bareTypeName(nodeArray(evaluateXPath(cswDescribeRecord, '//xs:element[@name="SummaryRecord"]/@type')))
+        const summaryRecordTypeName = bareTypeName(nodeArray(evaluateXPath(cswDescribeRecord, '//xs:element[@name="SummaryRecord"]/@type')));
+        const summaryRecordType = nodeArray(evaluateXPath(cswDescribeRecord, `//xs:complexType[@name="${summaryRecordTypeName}"]/xs:complexContent/xs:extension/xs:sequence/xs:element/@ref`));
         const recordTypeName = bareTypeName(nodeArray(evaluateXPath(cswDescribeRecord, '//xs:element[@name="Record"]/@type')));
+        const recordType = nodeArray(evaluateXPath(cswDescribeRecord, `//xs:complexType[@name="${recordTypeName}"]/xs:complexContent/xs:extension/xs:sequence/xs:element/@ref`));
+        const recordFields = recordType.map(field=>{return {name: field}});
+        recordFields.push(...(await getDCMITerms()));
 
         const summaryRecord = {
             cswVersion,
-            recordTypes: nodeArray(evaluateXPath(cswDescribeRecord, '//csw:DescribeRecordResponse/csw:SchemaComponent/xs:schema/xs:element/@name')),
+            //recordTypes: nodeArray(evaluateXPath(cswDescribeRecord, '//csw:DescribeRecordResponse/csw:SchemaComponent/xs:schema/xs:element/@name')),
             recordFields: nodeArray(evaluateXPath(cswDescribeRecord, '//xs:element[@name="Record"]/xs:complexType/xs:sequence/xs:element/@name')),
             summaryRecordFields: nodeArray(evaluateXPath(cswDescribeRecord, '//xs:element[@name="SummaryRecord"]/xs:complexType/xs:sequence/xs:element/@name')),
-            briefRecordFields: briefRecordType
+            briefRecordFields: briefRecordType.map(field=>{return {name: field}}),
+            summaryRecordFields: summaryRecordType.map(field=>{return {name: field}}),
+            recordFields
         };
         
         return {

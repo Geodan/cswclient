@@ -1,3 +1,4 @@
+import fs from 'fs';
 // Define a variable to hold the appropriate DOMParser instance
 let domParserPromise;
 let xpath;
@@ -17,6 +18,41 @@ let xpath;
         domParserPromise = new window.DOMParser();
     }
 })();
+
+async function loadXSD(filename) {
+    while (!domParserPromise) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const DOMParserInstance = await domParserPromise;
+    const data = fs.readFileSync(filename, 'utf8');
+    const doc = DOMParserInstance.parseFromString(data, 'text/xml');
+    return doc;
+}
+
+async function loadAndParseXSDs() {
+    try {
+        //const dcmes = await loadXSD('rec-dcmes.xsd');
+        const dcterms = await loadXSD('rec-dcterms.xsd');
+        // Now you have the parsed XSDs as DOM documents.
+        // You can start extracting field definitions from here.
+        // For example, to get all 'element' nodes in the 'dcmes' document:
+        const select = xpath.useNamespaces({ xs: 'http://www.w3.org/2001/XMLSchema' });
+        const elements = select('//descendant-or-self::xs:element', dcterms);
+        const fieldNames = elements.map((element) => {
+            const name = element.getAttribute('name');
+            const substitutionGroup = element.getAttribute('substitutionGroup');
+            return { name: name !== ''? 'dct:'+ name : '', substitutionGroup };
+        }).filter((element)=>element.name !== '');
+        return fieldNames
+    } catch (err) {
+        console.error(err);
+        return [];
+    }
+}
+
+export const getDCMITerms = async () => {
+    return loadAndParseXSDs();
+}
 
 // Function to parse XML with the pre-initialized DOMParser
 export const parseXml = async (xmlString) => {
