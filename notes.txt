@@ -1,0 +1,14 @@
+geoserver has a csw plugin to publish metadata about its services
+
+pycsw is used by other services
+
+mapstore has a CSW parser, but to get service urls, it uses record attribute dct:references, for example:
+<dct:references scheme="OGC:WMS">https://gs-stable.geosolutionsgroup.com/geoserver/wms?service=WMS&request=GetMap&layers=test:Linea_costa</dct:references>
+and publishes <dt:type> to be: http://purl.org/dc/dcmitype/Dataset
+<dc:type>http://purl.org/dc/dcmitype/Dataset</dc:type>
+It seems this CSW record is created by geoserver
+
+nationaalgeoregister uses dc:URI for service references
+<dc:URI protocol="" description="accessPoint">https://service.pdok.nl/cbs/vierkantstatistieken100m/2007/wfs/v1_0?request=GetCapabilities&service=WFS</dc:URI>
+
+OpenSearch is an alternative? to CSW

@@ -1,0 +1,37 @@
+Nationaalgeoregister
+
+CSW GetCapabilities
+https://nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire?service=CSW&request=getCapabilities
+
+CSW DescribeRecord
+https://nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire?service=CSW&request=DescribeRecord&version=2.0.2
+
+CSW GetRecords type=service
+https://nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire?service=CSW&version=2.0.2&request=GetRecords&typenames=csw:Record&resultType=results&outputFormat=application/xml&ElementSetName=full&constraintLanguage=CQL_TEXT&constraint_language_version=1.1.0&constraint=type%20like%20%27service%27
+
+
+Nieuw Zeeland
+CSW GetCapabilities
+https://data.linz.govt.nz/services/csw?service=CSW&request=getCapabilities
+
+CSW GetRecords All
+https://data.linz.govt.nz/services/csw?service=CSW&version=2.0.2&request=GetRecords&typenames=csw:Record&resultType=results&outputFormat=application/xml&ElementSetName=full
+
+CSW GetRecords type=service
+https://data.linz.govt.nz/services/csw?service=CSW&version=2.0.2&request=GetRecords&typenames=csw:Record&resultType=results&outputFormat=application/xml&ElementSetName=full&constraintLanguage=CQL_TEXT&constraint_language_version=1.1.0&constraint=type%20like%20%27service%27
+CQL_TEXT constraint not supported
+
+
+Italie
+Base
+https://gs-stable.geo-solutions.it/geoserver/csw?
+
+CSW GetCapabilities
+https://gs-stable.geo-solutions.it/geoserver/csw?service=CSW&request=getCapabilities
+
+
+Noorwegen:
+Beschrijving CSW: https://www.geonorge.no/en/for-developers/apis/csw/#:~:text=CSW%20is%20an%20open%20international,full%20support%20for%20CSW%202.0.
+geonetwork: https://www.geonorge.no/geonetwork/srv/nor/main.home
+csw GetCapabilities: https://www.geonorge.no/geonetwork/srv/nor/csw?service=CSW&request=GetCapabilities
+
