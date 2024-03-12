@@ -1,4 +1,4 @@
-import { fetchGetCapabilities, fetchDescribeRecord } from "./cswrequests.js";
+import { fetchGetCapabilities, fetchDescribeRecord, fetchGetRecords } from "./cswrequests.js";
 import { cswEndPoints } from "./endpoints.js";
 
 let cswTestUrl = 'https://nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire';
@@ -12,5 +12,10 @@ if (process.argv.length > 2) {
 const capabilities = await fetchGetCapabilities(cswTestUrl);
 console.log(capabilities);
 
-const describeRecord = await fetchDescribeRecord(cswTestUrl, capabilities.serviceTypeVersion);
+let describeRecordUrl = capabilities.operations.find(operation=>operation.name==='DescribeRecord')?.getUrls[0];
+const describeRecord = await fetchDescribeRecord(describeRecordUrl, capabilities.serviceTypeVersion);
 console.log(describeRecord);
+
+const getRecordsUrl = capabilities.operations.find(operation=>operation.name==='GetRecords')?.getUrls[0];
+const getRecords = await fetchGetRecords(getRecordsUrl, capabilities.serviceTypeVersion);
+//console.log(getRecords);
