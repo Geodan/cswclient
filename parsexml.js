@@ -68,6 +68,10 @@ function getNamespaces(xmlDoc) {
     if (prevXmlDoc === xmlDoc) {
         return cachedNamespaces;
     }
+    if (!xmlDoc.documentElement) {
+        // assume xmlDoc is a document fragment
+        return cachedNamespaces;
+    }
 
     const namespaces = {};
     
