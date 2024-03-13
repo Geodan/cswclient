@@ -13,9 +13,16 @@ const capabilities = await fetchGetCapabilities(cswTestUrl);
 console.log(capabilities);
 
 let describeRecordUrl = capabilities.operations.find(operation=>operation.name==='DescribeRecord')?.getUrls[0];
-const describeRecord = await fetchDescribeRecord(describeRecordUrl, capabilities.serviceTypeVersion);
+let describeRecord = await fetchDescribeRecord(describeRecordUrl, capabilities.serviceTypeVersion);
+if (describeRecord.error && describeRecord.error.indexOf('status') > -1 && describeRecord.error.indexOf('404') > -1) {
+    describeRecord = await fetchDescribeRecord(cswTestUrl, capabilities.serviceTypeVersion);
+}
 console.log(describeRecord);
 
 const getRecordsUrl = capabilities.operations.find(operation=>operation.name==='GetRecords')?.getUrls[0];
-const getRecords = await fetchGetRecords(getRecordsUrl, capabilities.serviceTypeVersion);
-//console.log(getRecords);
+const elementSetName = 'brief';
+let getRecords = await fetchGetRecords(getRecordsUrl, capabilities.serviceTypeVersion, elementSetName);
+if (getRecords.error && getRecords.error.indexOf('status') > -1 && getRecords.error.indexOf('404') > -1) {
+    getRecords = await fetchGetRecords(cswTestUrl, capabilities.serviceTypeVersion, elementSetName);
+}
+console.log(getRecords);
