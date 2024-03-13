@@ -3,5 +3,6 @@ export const cswEndPoints = [
   {name: "nationaalgeoregister", url: "https://nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire"},
   {name: "linz", url: "https://data.linz.govt.nz/services/csw?service=CSW&version=2.0.2&request=GetRecords"},
   {name: "geo-solutions", url: "https://gs-stable.geo-solutions.it/geoserver/csw"},
-  {name: "ign-fr", url: "https://data.geopf.fr/csw"},
+  {name: "geoplatforme.fr", url: "https://data.geopf.fr/csw"},
+  {name: "ign-fr", url: "https://wxs.ign.fr/catalogue/csw-inspire/"}
 ]

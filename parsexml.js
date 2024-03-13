@@ -104,6 +104,14 @@ function getNamespaces(xmlDoc) {
     // Start the traversal from the document's root element
     traverseElement(xmlDoc.documentElement);
 
+    // add csw namespaces
+    if (!namespaces.xs) {
+        namespaces.xs = 'http://www.w3.org/2001/XMLSchema';
+    }
+    if (!namespaces.ows) {
+        namespaces.ows = 'http://www.opengis.net/ows';
+    }
+
     // Cache the result for future calls with the same xmlDoc
     prevXmlDoc = xmlDoc;
     cachedNamespaces = namespaces;
@@ -116,9 +124,6 @@ export const evaluateXPath = (xmlDoc, expression, returnType) => {
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
         // Node.js environment
         const namespaces = getNamespaces(xmlDoc);
-        if (!namespaces.xs) {
-            namespaces.xs = 'http://www.w3.org/2001/XMLSchema';
-        }
         const select = xpath.useNamespaces(namespaces);
         return select(expression, xmlDoc, returnType); // Note: returnType handling might differ
     } else {
