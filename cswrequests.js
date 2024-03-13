@@ -131,7 +131,7 @@ export async function fetchDescribeRecord(url, cswVersion) {
         }
         const text = await response.text();
 
-        const cswDescribeRecord = await parseXml(text, {});
+        const cswDescribeRecord = await parseXml(text);
 
         const briefRecordTypeName = bareTypeName(nodeArray(evaluateXPath(cswDescribeRecord, '//xs:element[@name="BriefRecord"]/@type')));
         const briefRecordType = nodeArray(evaluateXPath(cswDescribeRecord, `//xs:complexType[@name="${briefRecordTypeName}"]/xs:complexContent/xs:extension/xs:sequence/xs:element/@ref`));
@@ -163,17 +163,17 @@ export async function fetchDescribeRecord(url, cswVersion) {
     }
 }
 
-function fetchRecordsXML(cswVersion, recordType, startPosition, maxRecords, constraint) {
+function fetchRecordsXML(cswVersion, elementSetName, startPosition, maxRecords, constraint) {
     //return `<csw:GetRecords xmlns:csw="http://www.opengis.net/cat/csw/2.0.2" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ows="http://www.opengis.net/ows" outputSchema="http://www.opengis.net/cat/csw/2.0.2" outputFormat="application/xml" version="2.0.2" resultType="results" service="CSW" maxRecords="10" xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd"><csw:Query typeNames="csw:Record"><csw:ElementSetName>summary</csw:ElementSetName><csw:Constraint version="1.1.0"><ogc:Filter><ogc:PropertyIsLike wildCard="*" singleChar="_" escapeChar="\\"><ogc:PropertyName>csw:AnyText</ogc:PropertyName><ogc:Literal>*None*</ogc:Literal></ogc:PropertyIsLike></ogc:Filter></csw:Constraint></csw:Query></csw:GetRecords>`
     return `<?xml version="1.0" encoding="UTF-8"?>
     <csw:GetRecords xmlns:csw="http://www.opengis.net/cat/csw/2.0.2" service="CSW" version="${cswVersion}" resultType="results" startPosition="${startPosition}" maxRecords="${maxRecords}" xmlns:ogc="http://www.opengis.net/ogc" xmlns:gml="http://www.opengis.net/gml" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd">
         <csw:Query typeNames="csw:Record">
-            <csw:ElementSetName>full</csw:ElementSetName>
+            <csw:ElementSetName>${elementSetName}</csw:ElementSetName>
         </csw:Query>
     </csw:GetRecords>`
 }
 
-export async function fetchGetRecords(url, cswVersion, serviceSearch) {
+export async function fetchGetRecords(url, cswVersion, elementSetName, serviceSearch) {
     try {
         const params = []
         const preparedUrl = prepareUrl(url, params);
@@ -184,15 +184,79 @@ export async function fetchGetRecords(url, cswVersion, serviceSearch) {
                 'User-Agent': 'JS CSW Client/0.1',
                 'Content-Type': 'text/xml',
             },
-            body: fetchRecordsXML(cswVersion, 'Record', 1, 10, '')
+            body: fetchRecordsXML(cswVersion, elementSetName, 1, 10, '')
         });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const text = await response.text();
         console.log(text);
-        const cswRecords = await parseXml(text, {});
-        return cswRecords;
+        const cswRecords = await parseXml(text);
+        let xmlRecordName;
+        switch(elementSetName) {
+            case 'full':
+                xmlRecordName = 'Record';
+                break;
+            case 'summary':
+                xmlRecordName = 'SummaryRecord';
+                break;
+            case 'brief':
+                xmlRecordName = 'BriefRecord';
+                break;
+            default:
+                console.error('fetchGetRecords: Unknown elementSetName:', elementSetName);
+                break;
+        }
+        const result = {
+            cswVersion,
+            searchStatus: nodeValue(evaluateXPath(cswRecords, '//csw:SearchStatus/@timestamp'), 0),
+            searchResults: evaluateXPath(cswRecords, '//csw:SearchResults').map(searchResult=> {
+                return {
+                    numberOfRecordsMatched: searchResult.getAttribute('numberOfRecordsMatched'),
+                    numberOfRecordsReturned: searchResult.getAttribute('numberOfRecordsReturned'),
+                    nextRecord: searchResult.getAttribute('nextRecord'),
+                    elementSet: searchResult.getAttribute('elementSet'),
+                }
+            })[0],
+            records: evaluateXPath(cswRecords, `//csw:${xmlRecordName}`).map(record => {
+                const result = {};
+                // get the list of all the fields in the record
+                const recordFields = Array.from(record.childNodes).filter(child=>child.nodeType === 1).map(child=>child.nodeName);
+                for (const recordField of recordFields) {
+                    const localFieldName = recordField.split(':').pop();
+                    if (localFieldName in result) {
+                        if (localFieldName === 'BoundingBox') {
+                            continue;
+                        }
+                        if (!Array.isArray(result[localFieldName])) {
+                            result[localFieldName] = [result[localFieldName]];
+                        }
+                        result[localFieldName].push(nodeValue(evaluateXPath(record, `./${recordField}/text()`), 0));
+                        continue;
+                    } else {
+                        result[localFieldName] = nodeValue(evaluateXPath(record, `./${recordField}/text()`), 0);
+                    }
+                }
+                if (result.BoundingBox) {
+                    result.bbox  = evaluateXPath(record, 'ows:BoundingBox').map(bbox => {
+                        const result = {
+                            crs: bbox.getAttribute('crs'),
+                            lowerCorner: nodeValue(evaluateXPath(bbox, 'ows:LowerCorner/text()'), 0),
+                            upperCorner: nodeValue(evaluateXPath(bbox, 'ows:UpperCorner/text()'), 0),
+                        }
+                        if (result.lowerCorner && result.upperCorner){
+                            result.extent = result.lowerCorner.split(' ').concat(result.upperCorner.split(' ')).map(parseFloat);
+                        }
+                        if (result.crs && result.crs.indexOf('EPSG') > -1 && result.crs.indexOf(':') > -1) {
+                            result.epsgcode = parseInt(result.crs.split(':').pop());
+                        }
+                        return result;
+                    })[0];
+                }
+                return result;
+            }),
+        };
+        return result;
     } catch (error) {
         console.error('Failed to fetch GetRecords:', error);
         return {
