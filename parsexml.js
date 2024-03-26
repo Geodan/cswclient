@@ -11,7 +11,7 @@ let xpath;
     if (isNode) {
         // In Node.js, dynamically import xmldom and set the promise for later use
         xpath = await import('xpath');
-        const xmldom = await import('xmldom');
+        const xmldom = await import('@xmldom/xmldom');
         domParserPromise = new xmldom.DOMParser()
     } else {
         // In browser, immediately resolve the promise with the native DOMParser
