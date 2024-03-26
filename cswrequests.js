@@ -166,7 +166,8 @@ export async function fetchDescribeRecord(url, cswVersion) {
 function fetchRecordsXML(cswVersion, elementSetName, startPosition, maxRecords, constraint) {
     //return `<csw:GetRecords xmlns:csw="http://www.opengis.net/cat/csw/2.0.2" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ows="http://www.opengis.net/ows" outputSchema="http://www.opengis.net/cat/csw/2.0.2" outputFormat="application/xml" version="2.0.2" resultType="results" service="CSW" maxRecords="10" xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd"><csw:Query typeNames="csw:Record"><csw:ElementSetName>summary</csw:ElementSetName><csw:Constraint version="1.1.0"><ogc:Filter><ogc:PropertyIsLike wildCard="*" singleChar="_" escapeChar="\\"><ogc:PropertyName>csw:AnyText</ogc:PropertyName><ogc:Literal>*None*</ogc:Literal></ogc:PropertyIsLike></ogc:Filter></csw:Constraint></csw:Query></csw:GetRecords>`
     return `<?xml version="1.0" encoding="UTF-8"?>
-    <csw:GetRecords xmlns:csw="http://www.opengis.net/cat/csw/2.0.2" service="CSW" version="${cswVersion}" resultType="results" startPosition="${startPosition}" maxRecords="${maxRecords}" xmlns:ogc="http://www.opengis.net/ogc" xmlns:gml="http://www.opengis.net/gml" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd">
+    <csw:GetRecords xmlns:csw="http://www.opengis.net/cat/csw/2.0.2" service="CSW" version="${cswVersion}" resultType="results" startPosition="${startPosition}" maxRecords="${maxRecords}" outputSchema="http://www.opengis.net/cat/csw/2.0.2" outputFormat="application/xml"
+        xmlns:ogc="http://www.opengis.net/ogc" xmlns:gml="http://www.opengis.net/gml" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd">
         <csw:Query typeNames="csw:Record">
             <csw:ElementSetName>${elementSetName}</csw:ElementSetName>
         </csw:Query>
@@ -177,6 +178,7 @@ export async function fetchGetRecords(url, cswVersion, elementSetName, serviceSe
     try {
         const params = []
         const preparedUrl = prepareUrl(url, params);
+        const requestXML = fetchRecordsXML(cswVersion, elementSetName, 1, 10, '');
     
         const response = await fetch(preparedUrl.href, {
             method: 'POST',
@@ -184,13 +186,13 @@ export async function fetchGetRecords(url, cswVersion, elementSetName, serviceSe
                 'User-Agent': 'JS CSW Client/0.1',
                 'Content-Type': 'text/xml',
             },
-            body: fetchRecordsXML(cswVersion, elementSetName, 1, 10, '')
+            body: requestXML
         });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const text = await response.text();
-        console.log(text);
+        //console.log(text);
         const cswRecords = await parseXml(text);
         let xmlRecordName;
         switch(elementSetName) {
