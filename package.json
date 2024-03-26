@@ -2,7 +2,7 @@
   "name": "cswclient",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "type": "module",
   "scripts": {
     "start": "concurrently \"nodemon app.js\" \"open-cli http://localhost:3000\"",
