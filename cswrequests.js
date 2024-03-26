@@ -170,15 +170,53 @@ function fetchRecordsXML(cswVersion, elementSetName, startPosition, maxRecords, 
         xmlns:ogc="http://www.opengis.net/ogc" xmlns:gml="http://www.opengis.net/gml" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd">
         <csw:Query typeNames="csw:Record">
             <csw:ElementSetName>${elementSetName}</csw:ElementSetName>
+            ${constraint}
         </csw:Query>
     </csw:GetRecords>`
 }
 
-export async function fetchGetRecords(url, cswVersion, elementSetName, serviceSearch) {
+export async function fetchGetRecords(url, cswVersion, elementSetName, startRecord, typeSearch, allSearch) {
     try {
         const params = []
         const preparedUrl = prepareUrl(url, params);
-        const requestXML = fetchRecordsXML(cswVersion, elementSetName, 1, 10, '');
+        let xmlExpression = ''
+        let xmlConstraint = '';
+        if (typeSearch && typeSearch.trim().length) {
+            xmlExpression += `
+                <ogc:PropertyIsEqualTo>
+                    <ogc:PropertyName>dc:Type</ogc:PropertyName>
+                    <ogc:Literal>${typeSearch.trim()}</ogc:Literal>
+                </ogc:PropertyIsEqualTo>
+            `
+        }
+        if (allSearch && allSearch.trim().length) {
+            const searchExpression = `
+                <ogc:PropertyIsLike wildCard="*" singleChar="_" escapeChar="\\">
+                    <ogc:PropertyName>dc:AnyText</ogc:PropertyName>
+                    <ogc:Literal>*${allSearch.trim()}*</ogc:Literal>
+                </ogc:PropertyIsLike>
+            `;
+            if (xmlExpression.length) {
+                xmlExpression = `
+                    <ogc:And>
+                        ${xmlExpression}
+                        ${searchExpression}
+                    </ogc:And>
+                `;
+            } else {
+                xmlExpression = searchExpression;
+            }
+        }
+        if (xmlExpression.length) {
+            xmlConstraint = `
+                <csw:Constraint version="1.1.0">
+                    <ogc:Filter>
+                        ${xmlExpression}
+                    </ogc:Filter>
+                </csw:Constraint>
+            `
+        }
+        const requestXML = fetchRecordsXML(cswVersion, elementSetName, startRecord, 10, xmlConstraint);
     
         const response = await fetch(preparedUrl.href, {
             method: 'POST',
