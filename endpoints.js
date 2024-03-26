@@ -7,4 +7,6 @@ export const cswEndPoints = [
   {name: "Bundesamt für Kartographie und Geodäsie (BKG)", url: "https://mis.bkg.bund.de/csw", language: "German"},
   {name: "ign-fr", url: "https://wxs.ign.fr/catalogue/csw-inspire/", language: "French"},
   {name: "ign-es", url: "http://www.ign.es/csw-inspire/srv/spa/csw", language: "Spanish"},
+  {name: "Finnish Meteorological Institute", url: "http://catalog.fmi.fi/geonetwork/srv/eng/csw", language: "Finnish"},
+  {name: "Swedish Cadastre", url: "https://www.geodata.se/geodataportalen/srv/en/csw", language: "Swedish"},
 ]
