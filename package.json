@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "concurrently \"nodemon app.js\" \"open-cli http://localhost:3000\"",
+    "test": "node test.js"
   },
   "author": "",
   "license": "ISC",
@@ -15,5 +16,10 @@
     "express": "^4.19.2",
     "openai": "^4.29.2",
     "xpath": "^0.0.34"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.0",
+    "open-cli": "^8.0.0"
   }
 }
