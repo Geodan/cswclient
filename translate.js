@@ -4,19 +4,24 @@ import { fileURLToPath } from 'url';
 const openai = new OpenAI();
 
 export async function translateStrings(textArray, language) {
-  const json = JSON.stringify(textArray);
-  if (language.toLowerCase() === "english")
-  {
-     return JSON.parse(json);
+  try {
+    const json = JSON.stringify(textArray);
+    if (language.toLowerCase() === "english")
+    {
+      return JSON.parse(json);
+    }
+    const completion = await openai.chat.completions.create({
+      messages: [
+        { role: "system", content: `You will be provided with json array that contains strings describing geographic datasets and types in language ${language}, and your task is to translate these strings to English`},
+        { role: "user", content: json}
+      ],
+      model: "gpt-3.5-turbo",
+    });
+    return JSON.parse(completion.choices[0].message.content);
+  } catch (error) {
+    console.error(`Error in translateStrings: ${error.message?error.message: error}`);
+    return null;
   }
-  const completion = await openai.chat.completions.create({
-    messages: [
-      { role: "system", content: `You will be provided with json array that contains strings describing geographic datasets and types in language ${language}, and your task is to translate these strings to English`},
-      { role: "user", content: json}
-    ],
-    model: "gpt-3.5-turbo",
-  });
-  return JSON.parse(completion.choices[0].message.content);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
