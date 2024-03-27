@@ -319,17 +319,16 @@ export async function fetchGetRecords(url, cswVersion, elementSetName, startReco
                 const recordFields = Array.from(record.childNodes).filter(child=>child.nodeType === 1).map(child=>child.nodeName);
                 for (const recordField of recordFields) {
                     const localFieldName = recordField.split(':').pop();
-                    if (localFieldName in result) {
-                        if (localFieldName === 'BoundingBox') {
-                            continue;
-                        }
-                        if (!Array.isArray(result[localFieldName])) {
-                            result[localFieldName] = [result[localFieldName]];
-                        }
-                        result[localFieldName].push(nodeValue(evaluateXPath(record, `./${recordField}/text()`), 0));
+                    if (localFieldName === 'BoundingBox') {
                         continue;
-                    } else {
-                        result[localFieldName] = nodeValue(evaluateXPath(record, `./${recordField}/text()`), 0);
+                    }
+                    if (!(localFieldName in result)) {
+                        const values = evaluateXPath(record, `./${recordField}/text()`);
+                        if (values.length > 1) {
+                            result[localFieldName] = values.map(value => value.nodeValue);
+                        } else {
+                            result[localFieldName] = nodeValue(values, 0);
+                        }
                     }
                 }
                 if (result.BoundingBox) {
@@ -354,6 +353,101 @@ export async function fetchGetRecords(url, cswVersion, elementSetName, startReco
         return result;
     } catch (error) {
         console.error('Failed to fetch GetRecords:', error);
+        return {
+            error: error.message
+        };
+    }
+}
+
+function parseRecordXML(record) {
+    let hasBoundingBox = false;
+    let hasURI = false;    
+    const result = {};
+    // get the list of all the fields in the record
+    const recordFields = Array.from(record.childNodes).filter(child=>child.nodeType === 1).map(child=>child.nodeName);
+    for (const recordField of recordFields) {
+        const localFieldName = recordField.split(':').pop();
+        if (localFieldName === 'BoundingBox') {
+            hasBoundingBox = true;
+            continue;
+        }
+        if (localFieldName === 'URI') {
+            hasURI = true;
+            continue;
+        }
+        if (!(localFieldName in result)) {
+            const values = evaluateXPath(record, `./${recordField}/text()`);
+            if (values.length > 1) {
+                result[localFieldName] = values.map(value => value.nodeValue);
+            } else {
+                result[localFieldName] = nodeValue(values, 0);
+            }
+        }
+    }
+    if (hasBoundingBox) {
+        result.bbox  = evaluateXPath(record, 'ows:BoundingBox').map(bbox => {
+            const result = {
+                crs: bbox.getAttribute('crs'),
+                lowerCorner: nodeValue(evaluateXPath(bbox, 'ows:LowerCorner/text()'), 0),
+                upperCorner: nodeValue(evaluateXPath(bbox, 'ows:UpperCorner/text()'), 0),
+            }
+            if (result.lowerCorner && result.upperCorner){
+                result.extent = result.lowerCorner.split(' ').concat(result.upperCorner.split(' ')).map(parseFloat);
+            }
+            if (result.crs && result.crs.indexOf('EPSG') > -1 && result.crs.indexOf(':') > -1) {
+                result.epsgcode = parseInt(result.crs.split(':').pop());
+            }
+            return result;
+        })[0];
+    }
+    if (hasURI) {
+        result.URI = evaluateXPath(record, 'dc:URI').map(uri => {
+            const obj = {};
+            const attributes = Array.from(uri.attributes);
+            for (let attr of attributes) {
+                obj[attr.name] = attr.value;
+            }
+            const url = uri.textContent;
+            if (url) {
+                obj.url = url;
+            }
+            return obj;
+        });
+    }
+    return result;
+}
+
+export async function fetchGetRecordById(url, cswVersion, elementSetName, id) {
+    try {
+        const params = [
+            {key: 'service', value: 'CSW'},
+            {key: 'request', value: 'GetRecordById'},
+            {key: 'version', value: cswVersion},
+            {key: 'elementSetName', value: elementSetName},
+            {key: 'id', value: id},
+            {key: 'outputSchema', value: 'http://www.opengis.net/cat/csw/2.0.2'},
+            {key: 'outputFormat', value: 'application/xml'}
+        ];
+        const preparedUrl = prepareUrl(url, params);
+        const response = await fetch(preparedUrl.href, {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'JS CSW Client/0.1'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const text = await response.text();
+        
+        const cswRecordById = await parseXml(text);
+        const result = {
+            cswVersion,
+            record: evaluateXPath(cswRecordById, `//csw:GetRecordByIdResponse/csw:Record`).map(record => parseRecordXML(record))
+        };
+        return result;
+    } catch (error) {
+        console.error('Failed to fetch GetRecordById:', error);
         return {
             error: error.message
         };

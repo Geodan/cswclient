@@ -21,6 +21,10 @@ class CSWApp extends LitElement {
         border: 1px solid black;
         padding: 0.5em;
       }
+      .recordtitle {
+        cursor: pointer;
+        text-decoration: underline;
+      }
       `
   }
   constructor() {
@@ -58,7 +62,7 @@ class CSWApp extends LitElement {
           <table>
             <thead><tr><th>Type</th><th>title</th><th>title (AI-translated)</th></tr></thead>
             <tbody>
-              ${this.briefRecords.map(record => html`<tr><td>${record.type}</td><td>${record.title}</td><td>${record.englishTitle}</td></tr>`)}
+              ${this.briefRecords.map(record => html`<tr><td>${record.type}</td><td @click="${(_e)=>this.getRecordById(record.identifier)}" class="recordtitle">${record.title}</td><td>${record.englishTitle}</td></tr>`)}
             </tbody>
           </table>
           ${this.startRecord > 1 ? html`<button @click="${()=>this.getRecordsHandler(this.startRecord - 10)}">Previous</button>`: ''}
@@ -102,13 +106,18 @@ class CSWApp extends LitElement {
       return null;
     }
   }
+  async getRecordById(identifier) {
+    console.log(`Getting record by id: ${identifier}`);
+    const fullRecord = await this.fetchJson(`./csw_record_by_id?url=${encodeURIComponent(this.catalogList[this.catalogSelect.value].url)}&id=${encodeURIComponent(identifier)}`);
+    console.log(fullRecord);
+  }
   async getRecordsHandler(startRecord) {
     const catalogUrl = this.catalogList[this.catalogSelect.value].url;
     const records = await this.fetchJson(`./csw_records?url=${encodeURIComponent(catalogUrl)}&startRecord=${startRecord}&type=${this.searchType}&search=${this.searchString}`);
     this.totalRecords = 0;
     this.briefRecords = [];
     this.requestUpdate();
-    if (!records.error) {
+    if (records && !records.error) {
       const searchResults = records.searchResults;
       this.totalRecords = searchResults.numberOfRecordsMatched;
       this.startRecord = searchResults.nextRecord - searchResults.numberOfRecordsReturned;
