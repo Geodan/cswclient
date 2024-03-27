@@ -27,6 +27,60 @@ export async function fetchGetCapabilities(url) {
         const serviceTitle = nodeValue(evaluateXPath(cswCapabilities, '//ows:ServiceIdentification/ows:Title/text()'), 0);
         const serviceAbstract = nodeValue(evaluateXPath(cswCapabilities, '//ows:ServiceIdentification/ows:Abstract/text()'), 0);
         const fees = nodeValue(evaluateXPath(cswCapabilities, '//ows:ServiceIdentification/ows:Fees/text()'), 0);
+        const contact = evaluateXPath(cswCapabilities, '//ows:ServiceProvider/ows:ServiceContact').map(node => {
+            return {
+                name: nodeValue(evaluateXPath(node, 'ows:IndividualName/text()'), 0),
+                position: nodeValue(evaluateXPath(node, 'ows:PositionName/text()'), 0),
+                organization: nodeValue(evaluateXPath(node, 'ows:ProviderName/text()'), 0),
+                phone: nodeValue(evaluateXPath(node, 'ows:Phone/ows:Voice/text()'), 0),
+                fax: nodeValue(evaluateXPath(node, 'ows:Phone/ows:Facsimile/text()'), 0),
+                email: nodeValue(evaluateXPath(node, 'ows:Address/ows:ElectronicMailAddress/text()'), 0),
+                address: evaluateXPath(node, 'ows:Address/ows:DeliveryPoint/text()').map(deliveryPoint => {
+                    return { address: deliveryPoint.textContent };
+                }),
+                city: nodeValue(evaluateXPath(node, 'ows:Address/ows:City/text()'), 0),
+                postalCode: nodeValue(evaluateXPath(node, 'ows:Address/ows:PostalCode/text()'), 0),
+                country: nodeValue(evaluateXPath(node, 'ows:Address/ows:Country/text()'), 0),
+                hours: nodeValue(evaluateXPath(node, 'ows:HoursOfService/text()'), 0),
+                instructions: nodeValue(evaluateXPath(node, 'ows:ContactInstructions/text()'), 0),
+                role: nodeValue(evaluateXPath(node, 'ows:Role/text()'), 0),
+                contactInfo: evaluateXPath(node, 'ows:ContactInfo').map(contactInfo => {
+                    return {
+                        phone: nodeValue(evaluateXPath(contactInfo, 'ows:Phone/ows:Voice/text()'), 0),
+                        fax: nodeValue(evaluateXPath(contactInfo, 'ows:Phone/ows:Facsimile/text()'), 0),
+                        email: nodeValue(evaluateXPath(contactInfo, 'ows:Address/ows:ElectronicMailAddress/text()'), 0),
+                        address: evaluateXPath(contactInfo, 'ows:Address/ows:DeliveryPoint/text()').map(deliveryPoint => {
+                            return { address: deliveryPoint.textContent };
+                        }),
+                        city: nodeValue(evaluateXPath(contactInfo, 'ows:Address/ows:City/text()'), 0),
+                        postalCode: nodeValue(evaluateXPath(contactInfo, 'ows:Address/ows:PostalCode/text()'), 0),
+                        country: nodeValue(evaluateXPath(contactInfo, 'ows:Address/ows:Country/text()'), 0),
+                        hours: nodeValue(evaluateXPath(contactInfo, 'ows:HoursOfService/text()'), 0),
+                        instructions: nodeValue(evaluateXPath(contactInfo, 'ows:ContactInstructions/text()'), 0),
+                    }
+                })
+            }
+        });
+        if (contact.length === 0) {
+            contact = undefined;
+        } else {
+            for (const item of contact) {
+                if (item.address?.length === 0) {
+                    item.address = undefined;
+                }
+                if (item.contactInfo) {
+                    if (item.contactInfo.length === 0) {
+                        item.contactInfo = undefined;
+                    } else {
+                        for (const info of item.contactInfo) {
+                            if (info.address?.length === 0) {
+                                info.address = undefined;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         const accessConstraints = nodeValue(evaluateXPath(cswCapabilities, '//ows:ServiceIdentification/ows:AccessConstraints/text()'), 0);
         const serviceType = nodeValue(evaluateXPath(cswCapabilities, '//ows:ServiceIdentification/ows:ServiceType/text()'), 0);
         const serviceTypeVersion = nodeValue(evaluateXPath(cswCapabilities, '//ows:ServiceIdentification/ows:ServiceTypeVersion/text()'), 0);
@@ -64,6 +118,7 @@ export async function fetchGetCapabilities(url) {
             serviceTitle,
             serviceAbstract,
             fees,
+            contact,
             accessConstraints,
             serviceType,
             serviceTypeVersion,
