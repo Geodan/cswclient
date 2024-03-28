@@ -9,7 +9,8 @@ class CSWApp extends LitElement {
       catalogInfo: { type: Object },
       totalRecords: { type: Number },
       startRecord: { type: Number },
-      endRecord: { type: Number }
+      endRecord: { type: Number },
+      fullRecord: { type: Object },
     };
   }
   static get styles() {
@@ -37,6 +38,7 @@ class CSWApp extends LitElement {
     this.startRecord = 1;
     this.searchType = '';
     this.searchString = '';
+    this.fullRecord = null;
   }
   render() {
     return html`
@@ -68,6 +70,10 @@ class CSWApp extends LitElement {
           ${this.startRecord > 1 ? html`<button @click="${()=>this.getRecordsHandler(this.startRecord - 10)}">Previous</button>`: ''}
           ${this.totalRecords > this.endRecord ? html`<button @click="${()=>this.getRecordsHandler(this.startRecord + 10)}">Next</button>`: ''}
         `: ''}
+        ${this.fullRecord ? html`
+          <h2>Full Record</h2>
+          <pre>${JSON.stringify(this.fullRecord, null, 2)}</pre>
+        `: ''}
       </div>
     `;
   }
@@ -80,6 +86,7 @@ class CSWApp extends LitElement {
     this.catalogInfo = {};
     this.totalRecords = 0;
     this.briefRecords = [];
+    this.fullRecord = null;
     this.catalogInfo = await this.fetchJson(`./csw_info?url=${encodeURIComponent(catalog.url)}`);
   }
   catalogChanged(event) {
@@ -107,15 +114,18 @@ class CSWApp extends LitElement {
     }
   }
   async getRecordById(identifier) {
-    console.log(`Getting record by id: ${identifier}`);
+    this.fullRecord = null;
     const fullRecord = await this.fetchJson(`./csw_record_by_id?url=${encodeURIComponent(this.catalogList[this.catalogSelect.value].url)}&id=${encodeURIComponent(identifier)}`);
-    console.log(fullRecord);
+    if (fullRecord && !fullRecord.error) {
+      this.fullRecord = fullRecord;
+    }
   }
   async getRecordsHandler(startRecord) {
     const catalogUrl = this.catalogList[this.catalogSelect.value].url;
     const records = await this.fetchJson(`./csw_records?url=${encodeURIComponent(catalogUrl)}&startRecord=${startRecord}&type=${this.searchType}&search=${this.searchString}`);
     this.totalRecords = 0;
     this.briefRecords = [];
+    this.fullRecord = null;
     this.requestUpdate();
     if (records && !records.error) {
       const searchResults = records.searchResults;

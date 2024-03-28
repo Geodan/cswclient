@@ -9,4 +9,8 @@ export const cswEndPoints = [
   {name: "ign-es", url: "http://www.ign.es/csw-inspire/srv/spa/csw", language: "Spanish"},
   {name: "Finnish Meteorological Institute", url: "http://catalog.fmi.fi/geonetwork/srv/eng/csw", language: "Finnish"},
   {name: "Swedish Cadastre", url: "https://www.geodata.se/geodataportalen/srv/en/csw", language: "Swedish"},
-]
+  {name: "Belgie Federaal", url: "https://csw.geo.be/eng/csw", language: "English"},
+  {name: "Belgie Federaal 2", url: "http://inspire.reporting.geo.be/eng/csw", language: "English"},
+  {name: "Vlaanderen", url: "https://metadata.vlaanderen.be/srv/dut/csw", language: "Dutch"},
+  {name: "Wallonie", url: "https://metawal.wallonie.be/geonetwork/srv/fre/csw", language: "French"}
+];
