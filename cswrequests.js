@@ -218,6 +218,68 @@ export async function fetchDescribeRecord(url, cswVersion) {
     }
 }
 
+function deduplicateArray(array) {
+    return [...new Set(array)];
+}
+
+function parseRecordXML(record) {
+    let hasBoundingBox = false;
+    let hasURI = false;    
+    const result = {};
+    // get the list of all the fields in the record
+    const recordFields = Array.from(record.childNodes).filter(child=>child.nodeType === 1).map(child=>child.nodeName);
+    for (const recordField of recordFields) {
+        const localFieldName = recordField.split(':').pop();
+        if (localFieldName === 'BoundingBox') {
+            hasBoundingBox = true;
+            continue;
+        }
+        if (localFieldName === 'URI') {
+            hasURI = true;
+            continue;
+        }
+        if (!(localFieldName in result)) {
+            const values = evaluateXPath(record, `./${recordField}/text()`);
+            if (values.length > 1) {
+                result[localFieldName] = deduplicateArray(values.map(value => value.nodeValue));
+            } else {
+                result[localFieldName] = nodeValue(values, 0);
+            }
+        }
+    }
+    if (hasBoundingBox) {
+        result.bbox  = evaluateXPath(record, 'ows:BoundingBox').map(bbox => {
+            const result = {
+                crs: bbox.getAttribute('crs'),
+                lowerCorner: nodeValue(evaluateXPath(bbox, 'ows:LowerCorner/text()'), 0),
+                upperCorner: nodeValue(evaluateXPath(bbox, 'ows:UpperCorner/text()'), 0),
+            }
+            if (result.lowerCorner && result.upperCorner){
+                result.extent = result.lowerCorner.split(' ').concat(result.upperCorner.split(' ')).map(parseFloat);
+            }
+            if (result.crs && result.crs.indexOf('EPSG') > -1 && result.crs.indexOf(':') > -1) {
+                result.epsgcode = parseInt(result.crs.split(':').pop());
+            }
+            return result;
+        })[0];
+    }
+    if (hasURI) {
+        result.URI = evaluateXPath(record, 'dc:URI').map(uri => {
+            const obj = {};
+            const attributes = Array.from(uri.attributes);
+            for (let attr of attributes) {
+                obj[attr.name] = attr.value;
+            }
+            const url = uri.textContent;
+            if (url) {
+                obj.url = url;
+            }
+            return obj;
+        });
+    }
+    return result;
+}
+
 function fetchRecordsXML(cswVersion, elementSetName, startPosition, maxRecords, constraint) {
     //return `<csw:GetRecords xmlns:csw="http://www.opengis.net/cat/csw/2.0.2" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ows="http://www.opengis.net/ows" outputSchema="http://www.opengis.net/cat/csw/2.0.2" outputFormat="application/xml" version="2.0.2" resultType="results" service="CSW" maxRecords="10" xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd"><csw:Query typeNames="csw:Record"><csw:ElementSetName>summary</csw:ElementSetName><csw:Constraint version="1.1.0"><ogc:Filter><ogc:PropertyIsLike wildCard="*" singleChar="_" escapeChar="\\"><ogc:PropertyName>csw:AnyText</ogc:PropertyName><ogc:Literal>*None*</ogc:Literal></ogc:PropertyIsLike></ogc:Filter></csw:Constraint></csw:Query></csw:GetRecords>`
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -232,6 +294,7 @@ function fetchRecordsXML(cswVersion, elementSetName, startPosition, maxRecords, 
 
 export async function fetchGetRecords(url, cswVersion, elementSetName, startRecord, typeSearch, allSearch) {
     try {
+        elementSetName = 'full';
         const params = []
         const preparedUrl = prepareUrl(url, params);
         let xmlExpression = ''
@@ -313,42 +376,7 @@ export async function fetchGetRecords(url, cswVersion, elementSetName, startReco
                     elementSet: searchResult.getAttribute('elementSet'),
                 }
             })[0],
-            records: evaluateXPath(cswRecords, `//csw:${xmlRecordName}`).map(record => {
-                const result = {};
-                // get the list of all the fields in the record
-                const recordFields = Array.from(record.childNodes).filter(child=>child.nodeType === 1).map(child=>child.nodeName);
-                for (const recordField of recordFields) {
-                    const localFieldName = recordField.split(':').pop();
-                    if (localFieldName === 'BoundingBox') {
-                        continue;
-                    }
-                    if (!(localFieldName in result)) {
-                        const values = evaluateXPath(record, `./${recordField}/text()`);
-                        if (values.length > 1) {
-                            result[localFieldName] = values.map(value => value.nodeValue);
-                        } else {
-                            result[localFieldName] = nodeValue(values, 0);
-                        }
-                    }
-                }
-                if (result.BoundingBox) {
-                    result.bbox  = evaluateXPath(record, 'ows:BoundingBox').map(bbox => {
-                        const result = {
-                            crs: bbox.getAttribute('crs'),
-                            lowerCorner: nodeValue(evaluateXPath(bbox, 'ows:LowerCorner/text()'), 0),
-                            upperCorner: nodeValue(evaluateXPath(bbox, 'ows:UpperCorner/text()'), 0),
-                        }
-                        if (result.lowerCorner && result.upperCorner){
-                            result.extent = result.lowerCorner.split(' ').concat(result.upperCorner.split(' ')).map(parseFloat);
-                        }
-                        if (result.crs && result.crs.indexOf('EPSG') > -1 && result.crs.indexOf(':') > -1) {
-                            result.epsgcode = parseInt(result.crs.split(':').pop());
-                        }
-                        return result;
-                    })[0];
-                }
-                return result;
-            }),
+            records: evaluateXPath(cswRecords, `//csw:${xmlRecordName}`).map(record => parseRecordXML(record))
         };
         return result;
     } catch (error) {
@@ -357,64 +385,6 @@ export async function fetchGetRecords(url, cswVersion, elementSetName, startReco
             error: error.message
         };
     }
-}
-
-function parseRecordXML(record) {
-    let hasBoundingBox = false;
-    let hasURI = false;    
-    const result = {};
-    // get the list of all the fields in the record
-    const recordFields = Array.from(record.childNodes).filter(child=>child.nodeType === 1).map(child=>child.nodeName);
-    for (const recordField of recordFields) {
-        const localFieldName = recordField.split(':').pop();
-        if (localFieldName === 'BoundingBox') {
-            hasBoundingBox = true;
-            continue;
-        }
-        if (localFieldName === 'URI') {
-            hasURI = true;
-            continue;
-        }
-        if (!(localFieldName in result)) {
-            const values = evaluateXPath(record, `./${recordField}/text()`);
-            if (values.length > 1) {
-                result[localFieldName] = values.map(value => value.nodeValue);
-            } else {
-                result[localFieldName] = nodeValue(values, 0);
-            }
-        }
-    }
-    if (hasBoundingBox) {
-        result.bbox  = evaluateXPath(record, 'ows:BoundingBox').map(bbox => {
-            const result = {
-                crs: bbox.getAttribute('crs'),
-                lowerCorner: nodeValue(evaluateXPath(bbox, 'ows:LowerCorner/text()'), 0),
-                upperCorner: nodeValue(evaluateXPath(bbox, 'ows:UpperCorner/text()'), 0),
-            }
-            if (result.lowerCorner && result.upperCorner){
-                result.extent = result.lowerCorner.split(' ').concat(result.upperCorner.split(' ')).map(parseFloat);
-            }
-            if (result.crs && result.crs.indexOf('EPSG') > -1 && result.crs.indexOf(':') > -1) {
-                result.epsgcode = parseInt(result.crs.split(':').pop());
-            }
-            return result;
-        })[0];
-    }
-    if (hasURI) {
-        result.URI = evaluateXPath(record, 'dc:URI').map(uri => {
-            const obj = {};
-            const attributes = Array.from(uri.attributes);
-            for (let attr of attributes) {
-                obj[attr.name] = attr.value;
-            }
-            const url = uri.textContent;
-            if (url) {
-                obj.url = url;
-            }
-            return obj;
-        });
-    }
-    return result;
 }
 
 export async function fetchGetRecordById(url, cswVersion, elementSetName, id) {
@@ -443,7 +413,7 @@ export async function fetchGetRecordById(url, cswVersion, elementSetName, id) {
         const cswRecordById = await parseXml(text);
         const result = {
             cswVersion,
-            record: evaluateXPath(cswRecordById, `//csw:GetRecordByIdResponse/csw:Record`).map(record => parseRecordXML(record))
+            records: evaluateXPath(cswRecordById, `//csw:GetRecordByIdResponse/csw:Record`).map(record => parseRecordXML(record))
         };
         return result;
     } catch (error) {
