@@ -294,7 +294,6 @@ function fetchRecordsXML(cswVersion, elementSetName, startPosition, maxRecords, 
 
 export async function fetchGetRecords(url, cswVersion, elementSetName, startRecord, typeSearch, allSearch) {
     try {
-        elementSetName = 'full';
         const params = []
         const preparedUrl = prepareUrl(url, params);
         let xmlExpression = ''
