@@ -1,10 +1,19 @@
 import OpenAI from "openai";
 import { fileURLToPath } from 'url';
 
-const openai = new OpenAI();
+let openai = null;
+
+if (!process.env.OPENAI_API_KEY) {
+  console.warn("OPENAI_API_KEY not set in environment variables");
+} else {
+  openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY});
+}
 
 export async function translateStrings(textArray, language) {
   try {
+    if (!openai) {
+      return textArray.map(text => `Server config: translation API key not set`);
+    }
     const json = JSON.stringify(textArray);
     if (language.toLowerCase() === "english")
     {
