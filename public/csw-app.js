@@ -29,6 +29,10 @@ class CSWApp extends LitElement {
         cursor: pointer;
         text-decoration: underline;
       }
+      #footer {
+        position: relative;
+        height: 500px;
+      }
       `
   }
   constructor() {
@@ -79,7 +83,12 @@ class CSWApp extends LitElement {
           <button ?disabled=${this.startRecord <= 1} @click="${()=>this.getRecordsHandler(this.startRecord - 10)}">Previous</button>
           <button ?disabled=${this.nextRecord === 0}  @click="${()=>this.getRecordsHandler(this.startRecord + 10)}">Next</button>
         `: ''}
+      </div>
+      <div id="fullrecord">
         ${this.fullRecord ? this.renderFullRecord(this.fullRecord) : ''}
+      </div>
+      <div id="footer">
+        &nbsp;
       </div>
     `;
   }
@@ -174,12 +183,16 @@ class CSWApp extends LitElement {
     const rows = event.target.parentElement.parentElement.querySelectorAll('tr');
     rows.forEach(row => row.style.backgroundColor = 'white');
     event.target.parentElement.style.backgroundColor = 'whitesmoke';
-    // remove focus of all previously selected input fields
-    const inputs = this.shadowRoot.querySelectorAll('input');
-    inputs.forEach(input => input.blur());
     this.updateFullRecord(identifier);
   }
   async updateFullRecord(identifier) {
+    // keep the table height the same while loading to avoid jumping
+    const fullRecordTable = this.shadowRoot.querySelector('#fullrecord');
+    if (fullRecordTable) {
+      const oldHeight = fullRecordTable.offsetHeight;
+      fullRecordTable.style.minHeight = oldHeight + 'px';
+    }
+
     this.fullRecord = null;
     this.translatedAbstract = this.translatedDescription = this.translatedSubject = 'Translating...'
     const fullRecord = await this.fetchJson(`./csw_record_by_id?url=${encodeURIComponent(this.catalogList[this.catalogSelect.value].url)}&id=${encodeURIComponent(identifier)}`);
@@ -190,6 +203,9 @@ class CSWApp extends LitElement {
         [ this.fullRecord.abstract, 
           this.fullRecord.description, 
           subject], this.catalogList[this.catalogSelect.value].language)
+    }
+    if (fullRecordTable) {
+      fullRecordTable.style.minHeight = 'auto';
     }
   }
   async getRecordsHandler(startRecord) {
