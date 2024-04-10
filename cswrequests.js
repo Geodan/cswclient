@@ -364,6 +364,10 @@ export async function fetchGetRecords(url, cswVersion, elementSetName, startReco
                 console.error('fetchGetRecords: Unknown elementSetName:', elementSetName);
                 break;
         }
+        const exception = evaluateXPath(cswRecords, '//ows:ExceptionReport/ows:Exception/ows:ExceptionText/text()');
+        if (exception.length) {
+            throw new Error(exception[0].nodeValue);
+        }
         const result = {
             cswVersion,
             searchStatus: nodeValue(evaluateXPath(cswRecords, '//csw:SearchStatus/@timestamp'), 0),

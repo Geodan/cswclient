@@ -1,5 +1,5 @@
 import express from 'express';
-import { translateStrings } from '../translate.js';
+import { translateStrings, translateSearchString } from '../translate.js';
 const router = express.Router();
 
 router.post('/translate', express.json(), async (req, res) => {
@@ -9,5 +9,13 @@ router.post('/translate', express.json(), async (req, res) => {
     res.json(translatedStrings);
   }  
 );
+
+router.get('/translateSearch', async (req, res) => {
+  const searchString = req.query.searchString;
+  const userLanguage = req.query.userLanguage;
+  const targetLanguage = req.query.targetLanguage;
+  const translatedString = await translateSearchString(searchString, userLanguage, targetLanguage);
+  res.json(translatedString);
+});
 
 export default router;
