@@ -1,6 +1,7 @@
 import {LitElement, html, css} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import './wc-map/dist/src/components/maps/web-maplibre-gl.js';
 import './wc-map/dist/src/components/tools/map-tool-boundingbox.js';
+import {getValidatedBbox} from './bboxvalidator.js';
 
 class CSWApp extends LitElement {
   static get properties() {
@@ -367,8 +368,9 @@ class CSWApp extends LitElement {
     } else {
       this.translatedSearch = '';
     }
+    let bbox = getValidatedBbox(this.shadowRoot.querySelector('#bbox')?.value);
     this.message = 'Searching Catalogue...'
-    const records = await this.fetchJson(`./csw_records?url=${encodeURIComponent(catalogUrl)}&startRecord=${startRecord}&type=${this.searchType}&search=${search}`);
+    const records = await this.fetchJson(`./csw_records?url=${encodeURIComponent(catalogUrl)}&startRecord=${startRecord}&type=${this.searchType}&search=${search}&bbox=${bbox}`);
     this.message = '';
     if (records && !records.error) {
       const searchResults = records.searchResults;

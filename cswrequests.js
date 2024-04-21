@@ -292,37 +292,59 @@ function fetchRecordsXML(cswVersion, elementSetName, startPosition, maxRecords, 
     </csw:GetRecords>`
 }
 
-export async function fetchGetRecords(url, cswVersion, elementSetName, startRecord, typeSearch, allSearch) {
+export async function fetchGetRecords(url, cswVersion, elementSetName, startRecord, typeSearch, allSearch, bbox) {
     try {
         const params = []
         const preparedUrl = prepareUrl(url, params);
         let xmlExpression = ''
+        let expressionCount = 0;
         let xmlConstraint = '';
+        let typeExpression = '';
         if (typeSearch && typeSearch.trim().length) {
-            xmlExpression += `
+            typeExpression = `
                 <ogc:PropertyIsEqualTo>
                     <ogc:PropertyName>dc:Type</ogc:PropertyName>
                     <ogc:Literal>${typeSearch.trim()}</ogc:Literal>
                 </ogc:PropertyIsEqualTo>
-            `
+            `;
+            expressionCount++;
         }
+        let bboxExpression = '';
+        if (bbox && bbox.trim().length) {
+            const bboxParts = bbox.split(',');
+            if (bboxParts.length === 4) {
+                bboxExpression = `
+                    <ogc:BBOX>
+                        <ogc:PropertyName>ows:BoundingBox</ogc:PropertyName>
+                        <gml:Envelope srsName="urn:ogc:def:crs:EPSG::4326">
+                            <gml:lowerCorner>${bboxParts[1]} ${bboxParts[0]}</gml:lowerCorner>
+                            <gml:upperCorner>${bboxParts[3]} ${bboxParts[2]}</gml:upperCorner>
+                        </gml:Envelope>
+                    </ogc:BBOX>
+                `
+                expressionCount++;
+            }
+        }
+        let searchExpression = '';
         if (allSearch && allSearch.trim().length) {
-            const searchExpression = `
+            searchExpression = `
                 <ogc:PropertyIsLike wildCard="*" singleChar="_" escapeChar="\\">
                     <ogc:PropertyName>dc:AnyText</ogc:PropertyName>
                     <ogc:Literal>*${allSearch.trim()}*</ogc:Literal>
                 </ogc:PropertyIsLike>
             `;
-            if (xmlExpression.length) {
-                xmlExpression = `
-                    <ogc:And>
-                        ${xmlExpression}
-                        ${searchExpression}
-                    </ogc:And>
-                `;
-            } else {
-                xmlExpression = searchExpression;
-            }
+            expressionCount++;
+        }
+        if (expressionCount < 2) {
+            xmlExpression = typeExpression + bboxExpression + searchExpression;
+        } else {
+            xmlExpression = `
+                <ogc:And>
+                    ${typeExpression}
+                    ${bboxExpression}
+                    ${searchExpression}
+                </ogc:And>
+                `
         }
         if (xmlExpression.length) {
             xmlConstraint = `
