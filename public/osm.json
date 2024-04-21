@@ -1,0 +1,20 @@
+[
+  {
+    "id": "osm-tiles",
+    "type": "raster",
+    "source": {
+      "type": "raster",
+      "tiles": [
+        "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      ],
+      "tileSize": 256,
+      "attribution": "© OpenStreetMap contributors",
+      "minzoom": 0,
+      "maxzoom": 19,
+      "bounds": [-180, -85.0511, 180, 85.0511],
+      "scheme": "xyz"
+    }
+  }
+]

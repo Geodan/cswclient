@@ -1,4 +1,6 @@
 import {LitElement, html, css} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import './wc-map/dist/src/components/maps/web-maplibre-gl.js';
+import './wc-map/dist/src/components/tools/map-tool-boundingbox.js';
 
 class CSWApp extends LitElement {
   static get properties() {
@@ -18,12 +20,118 @@ class CSWApp extends LitElement {
   }
   static get styles() {
     return css`
-      table {
-        border-collapse: collapse;
+      #header {
+        margin-bottom: 20px; /* Space below the header */
       }
-      th, td {
-        border: 1px solid black;
-        padding: 0.5em;
+      #header .title {
+        font-size: 24px; /* Large title */
+        font-weight: bold; /* Bold font */
+      }
+      #header .subtitle {
+        font-size: 14px; /* Smaller subtitle */
+        color: #888; /* Gray color */
+      }
+      #catalog {
+        margin-bottom: 20px; /* Space below the catalog */
+      }
+      /* Forms */
+      #catalog, #search, #records, #fullrecord {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+        margin-bottom: 20px; /* Space below the search area */
+      }
+      #search {
+        display: flex;
+        justify-content: space-between;
+      }
+      #leftpane {
+        flex: 0 1 auto; /* Don't grow, shrink, take automatic width based on content */
+      }
+      #rightpane {
+        display: flex;
+        flex: 1; /* Grow to take up remaining space */
+      }
+      #bboxmap {
+        margin-left: 20px;
+        max-width: 400px;
+        min-width: 100px;
+      }
+      #bboxmaptools {
+        display: flex;
+        flex-direction: column;
+        margin-left: 20px;
+        justify-content: space-between;
+        height: 100%;
+      }
+      #search input[type="text"],
+      #search select,
+      #search button {
+        padding: 10px;
+        margin-bottom: 10px; /* Space between form elements */
+        border: 1px solid #ddd; /* Subtle border */
+        border-radius: 4px; /* Rounded corners */
+      }
+      
+      #search button {
+        background-color: #5cb85c; /* A green color for actions */
+        color: white;
+        cursor: pointer;
+      }
+      
+      #search button:hover {
+        background-color: #4cae4c; /* Slightly darker green on hover */
+      }
+      /* Records Table Styles */
+      #records table {
+        width: 100%; /* Full width */
+        border-collapse: collapse; /* Collapse borders */
+        margin-bottom: 10px; /* Space below the table */
+      }
+      
+      #records th,
+      #records td {
+        text-align: left; /* Align text to the left */
+        padding: 12px; /* Padding inside table cells */
+        border-bottom: 1px solid #eee; /* Line between rows */
+      }
+      
+      #records th {
+        background-color: #f8f8f8; /* Light background for header */
+        font-weight: bold; /* Bold font for header */
+      }
+      
+      /* No border for the last cell to avoid double border with pagination */
+      #records tr:last-child td {
+        border-bottom: none;
+      }
+      
+      /* Pagination Styles */
+      #records .pagination {
+        text-align: center; /* Center the pagination buttons */
+        padding: 10px 0; /* Padding above and below the buttons */
+      }
+      
+      #records .pagination button {
+        padding: 5px 10px; /* Smaller padding for pagination buttons */
+        margin: 0 5px; /* Space between buttons */
+        background-color: #e7e7e7; /* Neutral background */
+        color: #333; /* Text color */
+        border: 1px solid #ddd; /* Border */
+        border-radius: 4px; /* Rounded corners */
+        cursor: pointer;
+      }
+      
+      #records .pagination button:hover {
+        background-color: #ddd; /* Slightly darker on hover */
+      }
+      
+      #records .pagination button:disabled {
+        background-color: #f5f5f5; /* Disabled button background */
+        color: #bbb; /* Disabled button text color */
+        cursor: default;
+        border-color: #f5f5f5; /* Disabled button border color */
       }
       .recordtitle {
         cursor: pointer;
@@ -33,6 +141,7 @@ class CSWApp extends LitElement {
         position: relative;
         height: 500px;
       }
+
       `
   }
   constructor() {
@@ -52,20 +161,34 @@ class CSWApp extends LitElement {
   }
   render() {
     return html`
-      <h1>CSW Client</h1>
-      <h2>Catalog</h2>
-      <label for="catalog-select">Catalog: </label><select @change="${(e)=>this.catalogChanged()}" id="catalog-select">
-        ${this.catalogList.map((catalog,index) => html`<option value="${index}">${catalog.name}</option>`)}
-      </select><br>
-      ${this.catalogInfo?.serviceTitle ? html`<p>${this.catalogInfo?.serviceTitle}<br>` : ''}
-      ${this.catalogInfo?.serviceType && this.catalogInfo?.serviceTypeVersion? html`${this.catalogInfo.serviceType} ${this.catalogInfo.serviceTypeVersion}<br>` : ''}
-        
-      <hr>
-      <h2>Search</h2>
-      <label for="type">Type: </label><input @keyup="${(event)=>this.updateType(event)}" type="text" id="type" placeholder="Type..."><br>
-      <label for="search">Search: </label><input @keyup="${(event)=>this.updateSearch(event)}" type="text" id="search" placeholder="Search..."><br>
-      <label for="bbox">Bounding box: </label><input type="text" id="bbox" placeholder="Bounding box..."><br>
-      <button @click="${()=>this.getRecordsHandler(1)}" id="get-records-button">Search</button>
+      <div id="header">
+        <div class="title">CSW Client</div>
+        <div class="subtitle">Browse Geographic <b>C</b>atalogue <b>S</b>ervices for the <b>W</b>eb (CSW)</div>
+      </div>
+      <div id="catalog">
+        <h2>Catalog</h2>
+        <label for="catalog-select">Catalog: </label><select @change="${(e)=>this.catalogChanged()}" id="catalog-select">
+          ${this.catalogList.map((catalog,index) => html`<option value="${index}">${catalog.name}</option>`)}
+        </select><br>
+        ${this.catalogInfo?.serviceTitle ? html`<p>${this.catalogInfo?.serviceTitle}<br>` : ''}
+        ${this.catalogInfo?.serviceType && this.catalogInfo?.serviceTypeVersion? html`${this.catalogInfo.serviceType} ${this.catalogInfo.serviceTypeVersion}<br>` : ''}
+        </div>
+      <div id="search">
+        <div id="leftpane">
+        <h2>Search</h2>
+        <label for="type">Type: </label><input @keyup="${(event)=>this.updateType(event)}" type="text" id="type" placeholder="Dataset type..."><br>
+        <label for="searchinput">Search: </label><input @keyup="${(event)=>this.updateSearch(event)}" type="text" id="searchinput" placeholder="Search..."><br>
+        <label for="bbox">Bounding box: </label><input type="text" id="bbox" placeholder="Bounding box..."><br>
+        <button @click="${()=>this.getRecordsHandler(1)}" id="get-records-button">Search</button>
+        </div>
+        <div id="rightpane">
+          <web-maplibre-gl id="bboxmap" map-layers="./osm.json"></web-maplibre-gl>
+          <div id="bboxmaptools">            
+            <map-tool-boundingbox for="bboxmap" id="bboxtool"></map-tool-boundingbox>
+            <button @click="${()=>this.setbbox()}">Copy bbox to search</button>
+          </div>
+        </div>
+      </div>
       <div id="records">
         <h2>Records</h2>
         Search string: ${this.translatedSearch}<br>
@@ -80,8 +203,10 @@ class CSWApp extends LitElement {
               ${this.briefRecords.map(record => html`<tr><td>${record.type}</td><td @click="${(event)=>this.briefRecordTitleClicked(event, record.identifier)}" class="recordtitle">${record.title}</td><td>${record.englishTitle}</td></tr>`)}
             </tbody>
           </table>
-          <button ?disabled=${this.startRecord <= 1} @click="${()=>this.getRecordsHandler(this.startRecord - 10)}">Previous</button>
-          <button ?disabled=${this.nextRecord === 0}  @click="${()=>this.getRecordsHandler(this.startRecord + 10)}">Next</button>
+          <div class="pagination">
+            <button ?disabled=${this.startRecord <= 1} @click="${()=>this.getRecordsHandler(this.startRecord - 10)}" title="Previous page of matching records">Previous</button>
+            <button ?disabled=${this.nextRecord === 0}  @click="${()=>this.getRecordsHandler(this.startRecord + 10)}" title="Next page of matching records">Next</button>
+          </div>
         `: ''}
       </div>
       <div id="fullrecord">
@@ -152,6 +277,15 @@ class CSWApp extends LitElement {
   }
   updateSearch(event) {
     this.searchString = event.target.value;
+  }
+  setbbox() {
+    const bbox = this.shadowRoot.querySelector('#bbox').value;
+    const bboxtool = this.shadowRoot.querySelector('#bboxtool');
+    const west = bboxtool.west;
+    const south = bboxtool.south;
+    const east = bboxtool.east;
+    const north = bboxtool.north;
+    this.shadowRoot.querySelector('#bbox').value = `${west},${south},${east},${north}`;
   }
   async fetchJson(url, options) {
     if (options === undefined) options = {};
