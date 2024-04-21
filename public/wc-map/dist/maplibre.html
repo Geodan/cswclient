@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web-MapLibre-GL</title>
+  <script type="module" src="./src/components/maps/web-maplibre-gl.js"></script>
+  <script type="module" src="./src/components/tools/map-tool-base.js"></script>
+  <script type="module" src="./src/components/tools/map-tool-coordinates.js"></script>
+  <script type="module" src="./src/components/tools/map-tool-boundingbox.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+    }
+    web-maplibre-gl, web-map {
+      height: 50%;
+      width: 50%;
+      display: block;
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <web-maplibre-gl id="mymap" map-layers="./layers/world.json">
+    <map-tool-base slot="top-center"></map-tool-base>
+    <map-tool-coordinates slot="bottom-center"></map-tool-coordinates>
+  </web-maplibre-gl>
+  <map-tool-base for="mymap"></map-tool-base>
+  <map-tool-coordinates for="mymap"></map-tool-coordinates>
+  <map-tool-boundingbox for="mymap"></map-tool-boundingbox>
+</body>
+</html>

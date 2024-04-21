@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Position</title>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      .host {
+        width: 500px;
+        height: 500px;        
+      }
+      .outercontainer {
+        position: relative;
+        height: 100%;
+        pointer-events: none;
+        border: 1px solid black;
+      }
+      .top, .bottom, .left, .right {
+        position: absolute;
+        pointer-events: auto;
+        cursor: pointer;
+      }
+      .top {
+        top: 0;
+      }
+      .bottom {
+        bottom: 0;
+      }
+      .left {
+        left: 0;
+        background-color: lightblue;
+      }
+      .center {
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .right {
+        right: 0;
+        background-color: lightcoral;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="host">
+      <div class="outercontainer">
+        <div class="top left">
+          <div>Top Left 1</div>
+          <div>Top Left 2</div>
+          <div>Top Left 3</div>
+          <div>Top Left 4</div>
+        </div>
+        <div class="top center">
+          <div>Top Center 1</div>
+          <div>Top Center 2</div>
+          <div>Top Center 3</div>
+          <div>Top Center 4</div>
+        </div>
+        <div class="top right">
+          <div>Top Right 1</div>
+          <div>Top Right 2</div>
+          <div>Top Right 3</div>
+          <div>Top Right 4</div>
+        </div>
+        <div class="bottom left">
+          <div>Bottom Left 1</div>
+          <div>Bottom Left 2</div>
+          <div>Bottom Left 3</div>
+          <div>Bottom Left 4</div>
+        </div>
+        <div class="bottom center">
+          <div>Bottom Center 1</div>
+          <div>Bottom Center 2</div>
+          <div>Bottom Center 3</div>
+          <div>Bottom Center 4</div>
+        </div>
+        <div class="bottom right">
+          <div>Bottom Right 1</div>
+          <div>Bottom Right 2</div>
+          <div>Bottom Right 3</div>
+          <div>Bottom Right 4</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

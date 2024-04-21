@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Position</title>
+    <style>
+.outercontainer {
+    display: flex;
+    flex-wrap: wrap; /* Allows items to wrap as needed */
+    border: 1px solid black;
+    height: 75vh;
+    align-items: flex-start;
+}
+
+.leftcolumn {    
+    display: flex;
+    flex-direction: row; 
+    writing-mode: vertical-lr; /* Stacks items vertically */
+    text-orientation: upright;
+    max-height: 100%; /* Minimum width before wrapping occurs */
+    
+    background-color: lightblue; /* Just for visual differentiation */
+    flex-wrap: wrap;
+    padding: 10px;
+    align-items: flex-start;
+    box-sizing: border-box;
+}
+.leftcolumn * {
+    writing-mode: horizontal-tb;
+}
+
+.leftrow {
+    display: flex; /* Lays out items in a row */
+    background-color: lightgreen; /* Just for visual differentiation */
+    padding: 10px;
+    align-items: flex-start;
+}
+
+.leftcolumn div, .leftrow div {
+    margin: 5px; /* Adds some space between items */
+    padding: 5px;
+    border: 1px solid black; /* Just for visual differentiation */
+}
+      
+    </style>
+  </head>
+  <body>
+    <div class="outercontainer">
+      <div class="leftcolumn">
+          <div>Item 1</div>
+          <div>Item 2</div>
+          <div>Item 3</div>
+          <div>Item 4</div>
+          <div>Item 5</div>
+          <div>Item 6</div>
+          <div>Item 7</div>
+          <div>Item 8</div>
+          <div>Item 9</div>
+          <div>Item 10</div>
+          <div>Item 11</div>
+          <div>Item 12</div>
+          <!-- Add more items as needed -->
+      </div>
+      <div class="leftrow">
+          <div>Item A</div>
+          <div>Item B</div>
+          <!-- Add more items as needed -->
+      </div>
+  </div>
+  </body>
+</html>
