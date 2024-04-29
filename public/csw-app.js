@@ -225,6 +225,9 @@ class CSWApp extends LitElement {
       }
     }
   }
+  renderUri(uri) {
+    return html`${uri.protocol} <a href="${uri.url}" target="cswlink">${uri.name?uri.name:'No name'} ${uri.description}</a>`;
+  }
   renderFullRecord(record) {
     if (!record) return html`<p>No record selected</p>`;
     const subject = record.subject ? Array.isArray(record.subject) ? record.subject.join(', ') : record.subject : '';
@@ -249,7 +252,7 @@ class CSWApp extends LitElement {
       <tr><td>Relation:</td><td> ${record.relation? html`<span @click="${(_e)=>this.updateFullRecord(record.relation)}">Link</span>`:'none'}</td></tr>
       <tr><td>Links: </td><td></td></tr>
       ${record.URI ?
-         record.URI.map(uri => html`<tr><td></td><td>${uri.protocol} <a href="${uri.url}" target="cswlink">${uri.name?uri.name:'No name'} ${uri.description}</a></td></tr>`)
+         record.URI.map(uri => html`<tr><td></td><td>${this.renderUri(uri)}</td></tr>`)
          :
           html`<tr><td></td><td>no URI/URLs defined</td></tr>`
       }
