@@ -220,13 +220,29 @@ class CSWApp extends LitElement {
   }
   renderOtherKeys(record) {
     for (const key in record) {
-      if (!['identifier', 'title', 'type', 'subject', 'format', 'date', 'abstract', 'description', 'rights', 'source', 'relation', 'URI'].includes(key)) {
+      if (!['identifier', 'title', 'type', 'subject', 'format', 'date', 'abstract', 'description', 'rights', 'source', 'relation', 'URI', 'references'].includes(key)) {
         return html`<tr><td>${key}:</td><td> ${record[key]}</td></tr>`;
       }
     }
   }
   renderUri(uri) {
-    return html`${uri.protocol} <a href="${uri.url}" target="cswlink">${uri.name?uri.name:'No name'} ${uri.description}</a>`;
+    return html`<tr><td></td><td>${uri.protocol} <a href="${uri.url}" target="cswlink">${uri.name?uri.name:'Untitled'} ${uri.description}</a></td></tr>`;
+  }
+  renderReference(reference) {
+    const url = reference.url;
+    const scheme = reference.scheme;
+    return html`<tr><td></td><td>${scheme} <a href="${url}">${url}</a></td></tr>`
+  }
+  renderLinks(record) {
+    if (!record.URI && !record.references) {
+      return html`<tr><td></td><td>no URI/URLs/references defined</td></tr>`
+    }
+    if (record.URI) {
+      return html`${record.URI.map(uri => this.renderUri(uri))}`
+    }
+    if (record.references) {
+      return html`${record.references.map(reference => this.renderReference(reference))}`
+    }
   }
   renderFullRecord(record) {
     if (!record) return html`<p>No record selected</p>`;
@@ -251,11 +267,7 @@ class CSWApp extends LitElement {
       <tr><td>Source:</td><td> ${record.source?record.source:'none'}</td></tr>
       <tr><td>Relation:</td><td> ${record.relation? html`<span @click="${(_e)=>this.updateFullRecord(record.relation)}">Link</span>`:'none'}</td></tr>
       <tr><td>Links: </td><td></td></tr>
-      ${record.URI ?
-         record.URI.map(uri => html`<tr><td></td><td>${this.renderUri(uri)}</td></tr>`)
-         :
-          html`<tr><td></td><td>no URI/URLs defined</td></tr>`
-      }
+      ${this.renderLinks(record)}
       ${this.renderOtherKeys(record)}
       </table>
     `;

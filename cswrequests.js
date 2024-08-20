@@ -283,7 +283,7 @@ function parseRecordXML(record) {
         });
     }
     if (hasReferences) {
-        result.URI = evaluateXPath(record, 'dct:references').map(uri => {
+        result.references = evaluateXPath(record, 'dct:references').map(uri => {
             const obj = {};
             const attributes = Array.from(uri.attributes);
             for (let attr of attributes) {
