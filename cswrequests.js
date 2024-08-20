@@ -224,7 +224,8 @@ function deduplicateArray(array) {
 
 function parseRecordXML(record) {
     let hasBoundingBox = false;
-    let hasURI = false;    
+    let hasURI = false;
+    let hasReferences = false;
     const result = {};
     // get the list of all the fields in the record
     const recordFields = Array.from(record.childNodes).filter(child=>child.nodeType === 1).map(child=>child.nodeName);
@@ -236,6 +237,10 @@ function parseRecordXML(record) {
         }
         if (localFieldName === 'URI') {
             hasURI = true;
+            continue;
+        }
+        if (localFieldName === 'references') {
+            hasReferences = true;
             continue;
         }
         if (!(localFieldName in result)) {
@@ -265,6 +270,20 @@ function parseRecordXML(record) {
     }
     if (hasURI) {
         result.URI = evaluateXPath(record, 'dc:URI').map(uri => {
+            const obj = {};
+            const attributes = Array.from(uri.attributes);
+            for (let attr of attributes) {
+                obj[attr.name] = attr.value;
+            }
+            const url = uri.textContent;
+            if (url) {
+                obj.url = url;
+            }
+            return obj;
+        });
+    }
+    if (hasReferences) {
+        result.URI = evaluateXPath(record, 'dct:references').map(uri => {
             const obj = {};
             const attributes = Array.from(uri.attributes);
             for (let attr of attributes) {
